@@ -1,7 +1,8 @@
-from langchain_community.document_loaders import PyMuPDFLoader 
+from langchain_community.document_loaders import UnstructuredPDFLoader 
 # create the loader 
-loader = PyMuPDFLoader("../data/test.pdf")
+path = "../data/test.pdf"
+loader = UnstructuredPDFLoader(path, mode="elements") 
 pages = loader.load()
-print(f"{pages[0].metadata}")
+print(f"{pages[3].metadata}")
 print("contents")
-print(f"{pages[0].page_content}")
+print(f"{pages[3].page_content}")
