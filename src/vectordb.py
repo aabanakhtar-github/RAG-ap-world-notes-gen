@@ -8,26 +8,33 @@ class InMemoryVectorDB:
     '''A class to represent the note taker's files in pdf form'''
 
     def __init__(self, path):
-        #self.loader = UnstructuredPDFLoader(path, mode = "single")
+        # Use unstructured to split the pdf
         print("loading files....")
-        self.pages = Document(
-            page_content="Hello, world! PME is oso coool!",
-            metadata={"source": "https://example.com"}
-        )
+        self.loader = UnstructuredPDFLoader(path, mode = "elements")
+        self.pages = self.loader.load() 
+        # use cohere to embed and create store in memory
         print("creating vector store....")
         embeddings = CohereEmbeddings(
             model="embed-english-v3.0",
         )
         self.store = InMemoryVectorStore(embeddings)
+        print("created vector store!")
 
-    def createDB(self):
+    def print_documents(self):
+        [print(doc.metadata) for doc in self.pages]
+
+    def as_retriever(self): 
+        return self.store.as_retriever()
+
+    def create_database(self):
         # chunkviz.up.railway.app
         splitter = CharacterTextSplitter(
-            separator = ".",
-            chunk_size= 475,
-            chunk_overlap = 50,
-            length_function = len
+            separator=".",
+            chunk_size=475,
+            chunk_overlap=50,
+            length_function=len
         )
-        self.pages = splitter.split_documents([self.pages])
+        # make more readable chunks for the llm
+        self.pages = splitter.split_documents(self.pages)
         self.store.add_documents(self.pages) 
-        print(self.store.as_retriever().invoke("PME"))
+        print("created database successfully!")
