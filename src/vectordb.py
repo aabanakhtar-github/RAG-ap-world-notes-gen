@@ -10,7 +10,7 @@ class InMemoryVectorDB:
     def __init__(self, path):
         # Use unstructured to split the pdf
         print("loading files....")
-        self.loader = UnstructuredPDFLoader(path, mode = "elements")
+        self.loader = UnstructuredPDFLoader(path, mode="elements")
         self.pages = self.loader.load() 
         # use cohere to embed and create store in memory
         print("creating vector store....")
@@ -24,7 +24,7 @@ class InMemoryVectorDB:
         [print(doc.metadata) for doc in self.pages]
 
     def as_retriever(self): 
-        return self.store.as_retriever()
+        return self.store.as_retriever(search_kwargs={"k":5})
 
     def create_database(self):
         # chunkviz.up.railway.app
