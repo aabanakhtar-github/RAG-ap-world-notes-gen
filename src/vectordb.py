@@ -10,7 +10,7 @@ class InMemoryVectorDB:
     def __init__(self, path):
         # Use unstructured to split the pdf
         print("loading files....")
-        self.loader = UnstructuredPDFLoader(path, mode="elements")
+        self.loader = UnstructuredPDFLoader(path, mode="elements", strategy="hi_res")
         self.pages = self.loader.load() 
         # use cohere to embed and create store in memory
         print("creating vector store....")
@@ -22,6 +22,9 @@ class InMemoryVectorDB:
 
     def print_documents(self):
         [print(doc.metadata) for doc in self.pages]
+
+    def documents(self):
+        return self.pages
 
     def as_retriever(self): 
         return self.store.as_retriever(search_kwargs={"k":5})
