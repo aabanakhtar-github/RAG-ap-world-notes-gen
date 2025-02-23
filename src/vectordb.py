@@ -2,6 +2,7 @@ from langchain_community.document_loaders import UnstructuredPDFLoader
 from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_core.documents import Document
 from langchain_cohere import CohereEmbeddings
+from langchain_community.embeddings import OllamaEmbeddings 
 from langchain_text_splitters import CharacterTextSplitter
 
 class InMemoryVectorDB: 
@@ -14,9 +15,7 @@ class InMemoryVectorDB:
         self.pages = self.loader.load() 
         # use cohere to embed and create store in memory
         print("creating vector store....")
-        embeddings = CohereEmbeddings(
-            model="embed-english-v3.0",
-        )
+        embeddings = CohereEmbeddings(model="embed-english-v3.0") 
         self.store = InMemoryVectorStore(embeddings)
         print("created vector store!")
 
