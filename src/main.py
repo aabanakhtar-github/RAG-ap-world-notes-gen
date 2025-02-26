@@ -1,24 +1,35 @@
-import getpass
-import os
-from langchain_core.messages import HumanMessage, AIMessage
-from langchain_core.prompts import ChatPromptTemplate
-from langchain.retrievers.multi_query import MultiQueryRetriever
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import *
-from langchain_cohere import ChatCohere
-from vectordb import InMemoryVectorDB 
-from chain_runnables import *
+from pipeline import NotesPipeline
+import streamlit as st 
+import tempfile
+import pandas as pd
 
-if not os.environ.get("COHERE_API_KEY"):
-  os.environ["COHERE_API_KEY"] = getpass.getpass("Enter API key for Cohere: ")
+class StreamlitUI: 
+  def __init__(self): 
+    pass 
 
-llm = ChatCohere(model="command-r-plus") 
-db = InMemoryVectorDB("../data/hehe.pdf")
-db.create_database() 
 
-find = RunnableLambda(lambda _ : extract_titles(llm, db))
-clean = RunnableLambda(lambda input : format_titles(llm, input))
-generate = RunnableLambda(lambda titles : generate_notes(llm, db, titles))
-chain = find | clean | generate
+def create_local_copy(uploaded_file):
+    with tempfile.NamedTemporaryFile(delete=False, suffix=uploaded_file.name, mode='wb') as temp_file:
+        temp_file.write(uploaded_file.getvalue())
+        return temp_file.name  # Returns the full path of the temp file
 
-print(chain.invoke({}))
+def transform_into_dataframe(notes: dict): 
+  df = pd.DataFrame({
+    "Concepts:" : notes.keys(), 
+    "Key things to know: " : notes.values()
+  })
+  return df
+
+st.title("Two Column Notes Generator")
+
+api_key_input_widget = st.sidebar.text_input("Cohere API KEY", type="password")
+pdf_uploader_widget = st.file_uploader("Upload your reading here (200MB):", type="pdf", accept_multiple_files=False)
+
+
+with st.form("app"):
+    submitted = st.form_submit_button("Submit for generation")
+    if submitted and pdf_uploader_widget and api_key_input_widget:
+      path = create_local_copy(pdf_uploader_widget)
+      st.write("Creating notes for" + path)
+      pipeline = NotesPipeline(api_key_input_widget, path)
+      st.table(transform_into_dataframe(pipeline.invoke()))

@@ -8,14 +8,14 @@ from langchain_text_splitters import CharacterTextSplitter
 class InMemoryVectorDB: 
     '''A class to represent the note taker's files in pdf form'''
 
-    def __init__(self, path):
+    def __init__(self, path, api_key):
         # Use unstructured to split the pdf
         print("loading files....")
         self.loader = UnstructuredPDFLoader(path, mode="elements", strategy="hi_res")
         self.pages = self.loader.load() 
         # use cohere to embed and create store in memory
         print("creating vector store....")
-        embeddings = CohereEmbeddings(model="embed-english-v3.0") 
+        embeddings = CohereEmbeddings(model="embed-english-v3.0", cohere_api_key=api_key) 
         self.store = InMemoryVectorStore(embeddings)
         print("created vector store!")
 
