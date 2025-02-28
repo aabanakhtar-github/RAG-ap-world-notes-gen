@@ -7,18 +7,27 @@ from langchain.retrievers.multi_query import MultiQueryRetriever
 from langchain_core.output_parsers import StrOutputParser
 from langchain_cohere import ChatCohere
 from vectordb import InMemoryVectorDB 
+import copy
 
 def extract_titles(llm, db):
     """Extracts titles from documents using the LLM."""
-    system_prompt = """Find the titles in the document. A common pattern for titles is to contain a piece of information, and a following paragraph. If the title is incomplete, or has no understandable meaning in relation to the text, do not output it. They usually have very broad relation to the following sentence as shown:\n
+    system_prompt = """Find the titles in the document. A title is characterized by the following properties:
+        Key Concepts or Themes: Titles reflect the main idea or theme (e.g., "trade").
+        Relevance of Keywords: Focus on significant terms that represent the core of the text.
+        Structure of the Text: Titles often come from the introductory sentences or headings.
+        Conciseness: Keep titles brief and focused on key aspects.
+        Contextual Clues: Words like "Influenced," "Factors," or "Conditions" can signal a title.
+        Presence of a Subject: Titles typically have a subject (e.g., "Trade") and an action or condition (e.g., "Influenced").
+        Avoidance of Details: Titles avoid excessive detail unless essential.
+        Language Patterns: Titles often use noun phrases or base form verbs.
 
-    example: Factors that Influenced Trade Among the factors that influenced trade include disease, new routes, and changing society. 
+    example: Factors that Influenced Trade Among the factors that influenced trade include disease, new routes, and changing society. Traders also faced dangerous conditions when...
     answer: Factors that Influenced Trade
-    why: The title is very disconnected and generalized compared to the text that follows it
+    why: The title is very disconnected and generalized compared to the text that follows it, and "Factors that influenced Trade" is a sentence fragment
 
-    example: Food of the Mayans The Mayans ate various kinds of dishes. 
+    example: Food of the Mayans The Mayans ate various kinds of dishes. Among these dishes were beans, maize, and potatoes...
     answer: Food of the Mayans
-    why: The title is very broad compared to the text that follows it
+    why: The title is a sentence fragment proceeding a paragraph. It is relatively broad compared to the following information.
 
     example: Unit 1: Ancient Greek Civilization 
     answer: Unit 1: Ancient Greek Civilization
@@ -26,7 +35,7 @@ def extract_titles(llm, db):
 
     The aforementioned texts are EXAMPLES and shouldn't be included in the answer unless they are in the document provided.
 
-    Please output the text that you think are titles in the document. If it seems like a title, please don't hesitate to output it, as it can be vague.
+    Please output the text that you think are titles in the document. Explain your reasoning after each title. 
     """
 
     prompt = ChatPromptTemplate.from_template(system_prompt + "\nDocuments:\n{doc}")
@@ -60,14 +69,16 @@ def format_titles(llm, input_text: str) -> list[str]:
 def generate_notes(llm, db, titles: list[str]):
     """Generates the actual two column notes using the titles from the previous chain"""
     system_prompt = """You will be provided a title and a list of documents. Based on the title, and the documents,
-    generate a summary sentence, and then add 2-3 summary bullet points that highlight important themes, continouties, and ideas. Format your answer like this: 
+    generate a summary sentence, and then add 2-3 summary bullet points that highlight important themes, continouties, and ideas. Strictly Format your answer like this, without adding any response fluff
+    Specifically, do not add headers like SUMMARY SENTENCE, or SUMMARY BULLET POINTS: 
 
-    EXAMPLE:
-    [Summary Sentence]
-    - [Summary Bullet Point 1]
-    - [Summary Bullet Point 2]
-    - [Summary Bullet Point 3] 
+    EXAMPLE FORMAT:
+    Summary Sentence
+    - Summary Bullet Point 1
+    - Summary Bullet Point 2
+    - Summary Bullet Point 3 
 
+    Please make them as concise and short as possible, while maintaining their semantic value. Use symbols, abbreviations, and acronyms. Simplify words by removing their vowels if they make sense ("people" -> "ppl")
     """
     notes = dict()
     prompt = ChatPromptTemplate.from_template(system_prompt + "Documents:\n{documents}\nTitle:{title}\n")
@@ -79,8 +90,3 @@ def generate_notes(llm, db, titles: list[str]):
         notes[title] = chain.invoke({"documents" : docs_context, "title" : title})
 
     return notes
-
-
-def concission(llm, notes):
-    """Makes the llm abbreviate and concise-ify the notes"""
-    pass
